@@ -1,6 +1,8 @@
 
 import { useState } from "react"
 import type { NextPage } from "next"
+import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import PaymentCard from "../components/paymentcard"
 import Head from "next/head"
 import Image from "next/legacy/image"
 import { Container, Row, Col, Form, Button, Card, InputGroup } from "react-bootstrap"
@@ -27,9 +29,6 @@ const CheckoutPage: NextPage = () => {
 
   const [discountCode, setDiscountCode] = useState<string>("")
   const [differentBillingAddress, setDifferentBillingAddress] = useState<boolean>(false)
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
-  const [cvc, setCvc] = useState("");
 
   const subtotal = order.reduce((acc, item) => acc + item.price * item.quantity, 0)
   const taxes: number = 0
@@ -41,11 +40,64 @@ const CheckoutPage: NextPage = () => {
     console.log("Applying discount:", discountCode)
   }
 
-  const handlePay = () => {
-    // Implement payment logic here
+  const stripe = useStripe();
+  const elements = useElements();
 
-    console.log("Payment processed")
-  }
+  const handlePay = async () => {
+    console.log("public key",process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+    if (!stripe || !elements) {
+      // Stripe.js n'est pas encore chargé
+      return;
+    }
+
+    // Créer un moyen de paiement avec Stripe
+    const cardElement = elements.getElement(CardElement);
+
+    // Créez un paymentMethod avec les données de CardElement
+    if (!cardElement) {
+      alert("Erreur lors de la récupération des informations de la carte.");
+      return;
+    }
+
+    const { error, paymentMethod } = await stripe.createPaymentMethod({
+      type: "card",
+      card: cardElement,
+    });
+
+    if (error) {
+      console.error(error);
+      alert("Erreur lors du paiement.");
+      return;
+    }
+
+    const paymentData = {
+      paymentMethodId: paymentMethod.id,
+    };
+
+    try {
+      const response = await fetch("http://localhost:3000/api/payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      const result = await response.json();
+      console.log("🚀 ~ handlePay ~ result:", result)
+      
+      if (result.message === "Payment successful") {
+        alert("Paiement effectué avec succès !");
+      } else {
+        console.log(result.message);
+        alert("Une erreur s'est produite lors du traitement du paiement.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erreur lors du paiement.");
+    }
+  };
+
   return (
     <>
       <Head>
@@ -192,59 +244,21 @@ const CheckoutPage: NextPage = () => {
                   </div>
                 </Card.Body>
               </Card>
-
-
-
-
-
-
-
-
-
-
-
+              {/* Payment Form */}
               <Form.Group className="mb-3">
                 <Form.Label>Numéro de carte</Form.Label>
                 <InputGroup>
                   <InputGroup.Text>
                     <Image src="/card-icon.png" width={30} height={20} alt="Card" />
                   </InputGroup.Text>
-                  <Form.Control type="text" placeholder="Indiquez votre numéro de carte" value={cardNumber}
-            onChange={(e) => setCardNumber(e.target.value)} />
+                  <div className="form-control p-2">
+                    <CardElement options={{hidePostalCode: true, style: {base: {fontSize: "16px", color: "#495057", "::placeholder": { color: "#6c757d", }, fontFamily: "Arial, sans-serif", padding: "10px", },invalid: {color: "#dc3545",  }, },}} />
+                  </div>
                 </InputGroup>
               </Form.Group>
-
-              <Row className="mb-4">
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Date d'exp.</Form.Label>
-                    <Form.Control type="text" placeholder="MM/AA" />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>CVC/CVV</Form.Label>
-                    <Form.Control type="text" placeholder="123" />
-                  </Form.Group>
-                </Col>
-              </Row>
-
               <Button onClick={handlePay} variant="warning" className="w-100 py-3 text-white fw-bold">
                 <span className="me-2">🔒</span> Payer
               </Button>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
               <div className="text-center mt-3 small text-muted">
                 <span className="me-2">🔒</span> Toutes les transactions sont sécurisées et cryptées
