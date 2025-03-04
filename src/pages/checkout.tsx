@@ -65,7 +65,6 @@ const CheckoutPage: NextPage = () => {
   });
 
   if (error) {
-    console.error(error);
     alert("Erreur lors du paiement.");
     return;
   }
@@ -88,11 +87,9 @@ const CheckoutPage: NextPage = () => {
       if (result.message === "Payment successful") {
         alert("Paiement effectué avec succès !");
       } else {
-        console.log(result.message);
         alert("Une erreur s'est produite lors du traitement du paiement.");
       }
     } catch (error) {
-      console.error(error);
       alert("Erreur lors du paiement.");
     }
   };
