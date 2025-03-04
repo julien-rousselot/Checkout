@@ -74,3 +74,6 @@ Après soumission, l'API Stripe renverra une réponse. Si le paiement est accept
 Si une erreur se produit :
 
 - Un message d'erreur sera affiché à l'utilisateur pour lui permettre de corriger le problème et de réessayer.
+
+![image](https://github.com/user-attachments/assets/dc87eb35-13ea-4c9c-afce-052870cb4568)
+
