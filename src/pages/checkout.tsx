@@ -1,19 +1,23 @@
 
-import { useState } from "react"
-import type { NextPage } from "next"
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import PaymentCard from "../components/paymentcard"
-import Head from "next/head"
-import Image from "next/legacy/image"
-import { Container, Row, Col, Form, Button, Card, InputGroup } from "react-bootstrap"
-import { CreditCard, Check2Circle, ArrowClockwise, Truck } from "react-bootstrap-icons"
+import { useState } from "react";
+import type { NextPage } from "next";
+import { useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement } from "@stripe/react-stripe-js";
+import Head from "next/head";
+import Image from "next/legacy/image";
+import { Container, Row, Col, Form, Button, Card, InputGroup } from "react-bootstrap";
+import type { StaticImageData } from "next/image";
+import { CreditCard, Check2Circle, ArrowClockwise, Truck } from "react-bootstrap-icons";
+import masterCard from "../../public/mastercard.png";
+import visaCard from "../../public/visa.png";
+import montessori from "../../public/montessori.jpg";
+import logo from "../../public/logo.png";
 
 interface OrderItem {
   id: string
   name: string
   price: number
   quantity: number
-  image: string
+  image: StaticImageData
 }
 
 const CheckoutPage: NextPage = () => {
@@ -23,7 +27,7 @@ const CheckoutPage: NextPage = () => {
       name: "Montessori Multi-Usage Observation Tower",
       price: 39.9,
       quantity: 1,
-      image: "/product-image.jpg",
+      image: montessori,
     },
   ])
 
@@ -34,46 +38,42 @@ const CheckoutPage: NextPage = () => {
   const taxes: number = 0
   const shipping: number = 0
   const total = subtotal + taxes + shipping
-
-  const handleApplyDiscount = () => {
-    // Implement discount logic here
-    console.log("Applying discount:", discountCode)
-  }
-
   const stripe = useStripe();
   const elements = useElements();
 
+  // Function to validate datas and handle the payment
   const handlePay = async () => {
-    console.log("public key",process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
     if (!stripe || !elements) {
-      // Stripe.js n'est pas encore chargé
       return;
     }
 
-    // Créer un moyen de paiement avec Stripe
-    const cardElement = elements.getElement(CardElement);
+  // Get the cards elements
+  const cardNumberElement = elements.getElement(CardNumberElement);
+  const cardExpiryElement = elements.getElement(CardExpiryElement);
+  const cardCvcElement = elements.getElement(CardCvcElement);
 
-    // Créez un paymentMethod avec les données de CardElement
-    if (!cardElement) {
-      alert("Erreur lors de la récupération des informations de la carte.");
-      return;
-    }
+  // Validation that the element are not null
+  if (!cardNumberElement || !cardExpiryElement || !cardCvcElement) {
+    alert("Erreur lors de la récupération des informations de la carte.");
+    return;
+  }
 
-    const { error, paymentMethod } = await stripe.createPaymentMethod({
-      type: "card",
-      card: cardElement,
-    });
+  // Create the PaymentMethod with the cards elements
+  const { error, paymentMethod } = await stripe.createPaymentMethod({
+    type: "card",
+    card: cardNumberElement,
+  });
 
-    if (error) {
-      console.error(error);
-      alert("Erreur lors du paiement.");
-      return;
-    }
+  if (error) {
+    console.error(error);
+    alert("Erreur lors du paiement.");
+    return;
+  }
 
-    const paymentData = {
-      paymentMethodId: paymentMethod.id,
-    };
-
+  // send data to the back (payment.ts in our case)
+  const paymentData = {
+    paymentMethodId: paymentMethod.id,
+  };
     try {
       const response = await fetch("http://localhost:3000/api/payment", {
         method: "POST",
@@ -84,7 +84,6 @@ const CheckoutPage: NextPage = () => {
       });
 
       const result = await response.json();
-      console.log("🚀 ~ handlePay ~ result:", result)
       
       if (result.message === "Payment successful") {
         alert("Paiement effectué avec succès !");
@@ -110,7 +109,7 @@ const CheckoutPage: NextPage = () => {
         <Container>
           <Row className="align-items-center">
             <Col xs={6}>
-              <Image src="/logo.png" alt="Logo" width={80} height={50} objectFit="contain" />
+              <Image src={logo} alt="Logo" width={80} height={50} objectFit="contain" />
             </Col>
             <Col xs={6} className="text-end">
               <a href="#" className="text-decoration-none text-dark">
@@ -124,6 +123,8 @@ const CheckoutPage: NextPage = () => {
       <Container className="py-4">
         <Row>
           <Col lg={7}>
+
+            {/* Contact */}
             <div className="mb-4">
               <h2>Contact</h2>
               <p className="text-muted small">Entrez vos informations de contact</p>
@@ -134,10 +135,14 @@ const CheckoutPage: NextPage = () => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Check type="checkbox" id="marketingEmails" label="J'accepte de recevoir des emails marketing" />
+                <input type="checkbox" id="marketingEmails" className="custom-checkbox"/>
+                <label className="ps-2" htmlFor="marketingEmails">
+                  J'accepte de recevoir des emails marketing
+                </label>
               </Form.Group>
             </div>
 
+            {/* Adresse de Livraison */}
             <div className="mb-4">
               <h2>Adresse de Livraison</h2>
               <p className="text-muted small">Entrez votre adresse de livraison</p>
@@ -205,16 +210,14 @@ const CheckoutPage: NextPage = () => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Check
-                  type="checkbox"
-                  id="differentBillingAddress"
-                  label="L'adresse de facturation est différente de l'adresse de livraison"
-                  checked={differentBillingAddress}
-                  onChange={(e) => setDifferentBillingAddress(e.target.checked)}
-                />
+                <input type="checkbox" id="differentBillingAddress" checked={differentBillingAddress} onChange={(e) => setDifferentBillingAddress(e.target.checked)} className="custom-checkbox"  />
+                <label className="ps-2" htmlFor="marketingEmails">
+                  J'accepte de recevoir des emails marketing
+                </label>
               </Form.Group>
             </div>
 
+            {/* Méthode de Livraison */}
             <div className="mb-4">
               <h2>Méthode de Livraison</h2>
               <p className="text-muted small">Sélectionnez votre méthode de livraison ci-dessous</p>
@@ -227,6 +230,7 @@ const CheckoutPage: NextPage = () => {
               </Card>
             </div>
 
+            {/* Paiement */}
             <div className="mb-4">
               <h2>Paiement</h2>
               <p className="text-muted small">
@@ -248,14 +252,73 @@ const CheckoutPage: NextPage = () => {
               <Form.Group className="mb-3">
                 <Form.Label>Numéro de carte</Form.Label>
                 <InputGroup>
-                  <InputGroup.Text>
-                    <Image src="/card-icon.png" width={30} height={20} alt="Card" />
-                  </InputGroup.Text>
-                  <div className="form-control p-2">
-                    <CardElement options={{hidePostalCode: true, style: {base: {fontSize: "16px", color: "#495057", "::placeholder": { color: "#6c757d", }, fontFamily: "Arial, sans-serif", padding: "10px", },invalid: {color: "#dc3545",  }, },}} />
+                  <div className="form-group w-100">
+                    {/* Numéro de carte */}
+                    <div className="form-control p-2">
+                      <CardNumberElement
+                        options={{
+                          style: {
+                            base: {
+                              fontSize: "16px",
+                              color: "#495057",
+                              "::placeholder": { color: "#6c757d" },
+                              fontFamily: "Arial, sans-serif",
+                              padding: "10px",
+                            },
+                            invalid: { color: "#dc3545" },
+                          },
+                        }}
+                      />
+                    </div>
+
+                    {/* Date d'expiration et CVV alignés côte à côte */}
+                    <div className="mt-3 d-flex justify-content-between w-100">
+                      {/* Date d'expiration */}
+                      <div className="w-50 me-2">
+                        <Form.Label>Date d'exp</Form.Label>
+                        <div className="form-control p-2">
+                          <CardExpiryElement
+                            options={{
+                              style: {
+                                base: {
+                                  fontSize: "16px",
+                                  color: "#495057",
+                                  "::placeholder": { color: "#6c757d" },
+                                  fontFamily: "Arial, sans-serif",
+                                  padding: "10px",
+                                },
+                                invalid: { color: "#dc3545" },
+                              },
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* CVC/CVV */}
+                      <div className="w-50">
+                        <Form.Label>CVC/CVV</Form.Label>
+                        <div className="form-control p-2">
+                          <CardCvcElement
+                            options={{
+                              style: {
+                                base: {
+                                  fontSize: "16px",
+                                  color: "#495057",
+                                  "::placeholder": { color: "#6c757d" },
+                                  fontFamily: "Arial, sans-serif",
+                                  padding: "10px",
+                                },
+                                invalid: { color: "#dc3545" },
+                              },
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </InputGroup>
               </Form.Group>
+
               <Button onClick={handlePay} variant="warning" className="w-100 py-3 text-white fw-bold">
                 <span className="me-2">🔒</span> Payer
               </Button>
@@ -265,8 +328,8 @@ const CheckoutPage: NextPage = () => {
               </div>
 
               <div className="text-center mt-3">
-                <Image src="/visa.png" width={40} height={25} alt="Visa" className="me-2" />
-                <Image src="/mastercard.png" width={40} height={25} alt="Mastercard" />
+                <Image src={visaCard} width={50} height={30} alt="Visa" className="pe-2" />
+                <Image src={masterCard} width={50} height={30} alt="Mastercard" className="pe-2"/>
               </div>
             </div>
           </Col>
@@ -305,7 +368,7 @@ const CheckoutPage: NextPage = () => {
                       value={discountCode}
                       onChange={(e) => setDiscountCode(e.target.value)}
                     />
-                    <Button variant="outline-secondary" onClick={handleApplyDiscount}>
+                    <Button variant="outline-secondary">
                       Appliquer
                     </Button>
                   </InputGroup>

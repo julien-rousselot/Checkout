@@ -5,19 +5,20 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-02-24.acacia",
 });
 
+//Back function to handle the payment
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
     const { paymentMethodId } = req.body;
     
     try {
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: 2000,
+        amount: 500,
         currency: "eur",
         payment_method: paymentMethodId,
         confirm: true,
         automatic_payment_methods: {
-          enabled: true, // Active uniquement les paiements automatiques
-          allow_redirects: "never", // Empêche les redirections
+          enabled: true,
+          allow_redirects: "never",
         },
       });
 
