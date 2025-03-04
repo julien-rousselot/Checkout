@@ -27,7 +27,7 @@ Seul le test de paiement stripe est fonctionnel et à une validation des donnée
 
 Clone le projet depuis le repository GitHub en utilisant la commande suivante :
 
-SSH ```git clone git@github.com:julien-rousselot/Stripe-checkout.git```
+SSH: ```git clone git@github.com:julien-rousselot/Stripe-checkout.git```
 
 ### 2. Installez les dépendances
 
