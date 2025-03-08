@@ -50,6 +50,8 @@ npm run dev
 Ouvrez votre navigateur et allez sur la page de checkout de l'application.
  (http://localhost:3000/checkout), la page (http://localhost:3000) nous renvoi une erreur 404 car ce n'est pas le but de l'exercice.
 
+![image](https://github.com/user-attachments/assets/aef49d7f-d93a-4bde-b58e-66db47bf10aa)
+
 ### 2. Utilisez une carte de test Stripe
 
 Stripe propose des cartes de test pour simuler des paiements sans utiliser de véritable argent. Utilisez les informations de carte suivantes pour tester :
